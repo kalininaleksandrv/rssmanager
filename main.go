@@ -2,8 +2,9 @@ package main
 
 import (
 	"log"
-	"os"
 	"net/http"
+	"os"
+
 	"github.com/joho/godotenv"
 )
 
