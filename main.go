@@ -15,9 +15,11 @@ func main() {
 		log.Fatal("$PORT must be set")
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	returnFromRoot := func(w http.ResponseWriter, r *http.Request) {
 		respondWithJson(w, http.StatusOK, map[string]string{"message": "Hello from RssManager backend!"})
-	})
+	}
+
+	http.HandleFunc("/", returnFromRoot)
 
 	log.Printf("Server starting on port %s", port)
 
