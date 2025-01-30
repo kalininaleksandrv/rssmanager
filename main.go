@@ -19,7 +19,7 @@ func main() {
 		respondWithJson(w, http.StatusOK, map[string]string{"message": "Hello from RssManager backend!"})
 	}
 
-	http.HandleFunc("/", returnFromRoot)
+	http.HandleFunc("GET /hello", returnFromRoot)
 
 	log.Printf("Server starting on port %s", port)
 
