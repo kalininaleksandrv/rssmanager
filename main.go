@@ -1,12 +1,19 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/kalininaleksandrv/rssmanager/internal/database"
+	_ "github.com/lib/pq"
 )
+
+type dbConfig struct {
+	DB *database.Queries
+}
 
 func main() {
 	godotenv.Load()
@@ -14,12 +21,23 @@ func main() {
 	if port == "" {
 		log.Fatal("$PORT must be set")
 	}
-
-	returnFromRoot := func(w http.ResponseWriter, r *http.Request) {
-		respondWithJson(w, http.StatusOK, map[string]string{"message": "Hello from RssManager backend!"})
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatal("$DB_URL must be set")
 	}
 
-	http.HandleFunc("GET /hello", returnFromRoot)
+	conn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dbCfg := dbConfig{
+		DB : database.New(conn),
+	}
+
+	http.HandleFunc("POST /user", dbCfg.handlerCreateUser)
+
+	http.HandleFunc("GET /user/id", dbCfg.handlerGetUser)
 
 	log.Printf("Server starting on port %s", port)
 
