@@ -6,6 +6,24 @@ import (
 	"net/http"
 )
 
+type payload struct {
+	Id  int    `json:"id"`
+	Name string `json:"name"`
+}
+
+func parseJsonRequest(r *http.Request) (payload, error) {
+
+	payloadObj := payload{}
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&payloadObj)
+	if err != nil {
+		log.Printf("Error decoding request, %v", err)
+		return payloadObj, err
+	}
+	return payloadObj, nil
+}
+
 func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	response, err := json.Marshal(payload)
 	if err != nil {

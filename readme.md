@@ -1,0 +1,1 @@
+missing \"=\" after \"posrgres://root:123@localhost:5432/gorssdb\" in connection info string\"

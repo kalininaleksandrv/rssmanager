@@ -1,10 +1,8 @@
 #!/bin/bash
 
 # Set database connection URL
-DB_USER="root"
-DB_PASS="123"
 DB_HOST="localhost:5432/gorssdb"
-DB_URL="postgres://$DB_USER:$DB_PASS@$DB_HOST?sslmode=disable"
+DB_URL="postgres://root:123@localhost:5432/gorssdb?sslmode=disable"
 
 # Path to migrations folder (change if necessary)
 MIGRATIONS_DIR="./sql/schema"

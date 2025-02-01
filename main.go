@@ -32,7 +32,7 @@ func main() {
 	}
 
 	dbCfg := dbConfig{
-		DB : database.New(conn),
+		DB: database.New(conn),
 	}
 
 	http.HandleFunc("POST /user", dbCfg.handlerCreateUser)
