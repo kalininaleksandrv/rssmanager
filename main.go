@@ -37,7 +37,7 @@ func main() {
 
 	http.HandleFunc("POST /user", dbCfg.handlerCreateUser)
 
-	http.HandleFunc("GET /user/id", dbCfg.handlerGetUser)
+	http.HandleFunc("GET /user/", dbCfg.handlerGetUser)
 
 	log.Printf("Server starting on port %s", port)
 

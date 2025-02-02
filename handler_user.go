@@ -2,7 +2,8 @@ package main
 
 import (
 	"net/http"
-
+	"strconv"
+	"strings"
 	"github.com/kalininaleksandrv/rssmanager/internal/database"
 )
 
@@ -24,5 +25,22 @@ func (dbCfg *dbConfig) handlerCreateUser (w http.ResponseWriter, r *http.Request
 }
 
 func (dbCfg *dbConfig) handlerGetUser (w http.ResponseWriter, r *http.Request) {
-	respondWithJson(w, http.StatusOK, map[string]string{"message": "Hello from RssManager backend!"})
+
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 3 || len(parts) > 4 {
+		http.Error(w, "Invalid request URL", http.StatusBadRequest)
+		return
+	}
+	
+	id, err := strconv.Atoi(parts[2]) // Convert ID to int
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+	fetchedUser, err := dbCfg.DB.GetUserById(r.Context(), int32(id))
+	if err != nil {
+		respondWithJson(w, http.StatusInternalServerError, map[string]string{"error": "Can't found user with id " + parts[2]})
+		return
+	}
+	respondWithJson(w, http.StatusOK, fetchedUser)
 }
