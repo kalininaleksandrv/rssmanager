@@ -28,20 +28,10 @@ func (dbCfg *dbConfig) handlerCreateUser (w http.ResponseWriter, r *http.Request
 
 func (dbCfg *dbConfig) handlerGetUser (w http.ResponseWriter, r *http.Request) {
 
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) != 3 {
-		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request URL"})
-		return
-	}
-	
-	id, err := strconv.Atoi(parts[2]) // Convert ID to int
-	if err != nil {
-		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
-		return
-	}
+	id:= parsePathForId(w, r)
 	fetchedUser, err := dbCfg.DB.GetUserById(r.Context(), int32(id))
 	if err != nil {
-		respondWithJson(w, http.StatusInternalServerError, map[string]string{"error": "Can't found user with id " + parts[2]})
+		respondWithJson(w, http.StatusInternalServerError, map[string]string{"error": "Can't found user with id " + strconv.Itoa(id)})
 		return
 	}
 	respondWithJson(w, http.StatusOK, fetchedUser)
@@ -49,17 +39,8 @@ func (dbCfg *dbConfig) handlerGetUser (w http.ResponseWriter, r *http.Request) {
 
 func (dbCfg *dbConfig) handlerUpdateUser (w http.ResponseWriter, r *http.Request) {
 
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) != 3 {
-		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request URL"})
-		return
-	}
-	
-	id, err := strconv.Atoi(parts[2]) // Convert ID to int
-	if err != nil {
-		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
-		return
-	}
+	id:= parsePathForId(w, r)
+
 	user, err := parseJsonRequest(r)
 	if err != nil {
 		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request: unable to parse User params"})
@@ -71,8 +52,22 @@ func (dbCfg *dbConfig) handlerUpdateUser (w http.ResponseWriter, r *http.Request
 		UpdatedAt: time.Now(),
 	})
 	if err != nil {
-		respondWithJson(w, http.StatusInternalServerError, map[string]string{"error": "Failed to update user with id " + parts[2]})
+		respondWithJson(w, http.StatusInternalServerError, map[string]string{"error": "Failed to update user with id " + strconv.Itoa(id)})
 		return
 	}
 	respondWithJson(w, http.StatusOK, updatedUser)
+}
+
+func parsePathForId (w http.ResponseWriter, r *http.Request) (int) {
+
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) != 3 {
+		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request URL"})
+	}
+	
+	id, err := strconv.Atoi(parts[2]) // Convert ID to int
+	if err != nil {
+		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
+	}
+	return id
 }
