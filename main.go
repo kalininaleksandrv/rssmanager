@@ -39,6 +39,8 @@ func main() {
 
 	http.HandleFunc("GET /user/", dbCfg.handlerGetUser)
 
+	http.HandleFunc("PUT /user/", dbCfg.handlerUpdateUser)
+
 	log.Printf("Server starting on port %s", port)
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
