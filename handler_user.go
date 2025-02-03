@@ -27,14 +27,14 @@ func (dbCfg *dbConfig) handlerCreateUser (w http.ResponseWriter, r *http.Request
 func (dbCfg *dbConfig) handlerGetUser (w http.ResponseWriter, r *http.Request) {
 
 	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 3 || len(parts) > 4 {
-		http.Error(w, "Invalid request URL", http.StatusBadRequest)
+	if len(parts) != 3 {
+		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request URL"})
 		return
 	}
 	
 	id, err := strconv.Atoi(parts[2]) // Convert ID to int
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
 		return
 	}
 	fetchedUser, err := dbCfg.DB.GetUserById(r.Context(), int32(id))

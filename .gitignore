@@ -2,3 +2,4 @@
 .env
 rssmanager
 vendor/
+__debug_*
