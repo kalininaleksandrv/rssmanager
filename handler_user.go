@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -9,11 +10,13 @@ import (
 	"github.com/kalininaleksandrv/rssmanager/internal/database"
 )
 
+
+
 func (dbCfg *dbConfig) handlerCreateUser (w http.ResponseWriter, r *http.Request) {
 
-	user, err := parseJsonRequest(r)
+	user, err := parseUserJsonRequest(r)
 	if err != nil {
-		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request: unable to parse User params"})
+		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request: " + err.Error()})
 		return
 	}
 	createdUser, err := dbCfg.DB.CreateUser(r.Context(), database.CreateUserParams{
@@ -26,22 +29,20 @@ func (dbCfg *dbConfig) handlerCreateUser (w http.ResponseWriter, r *http.Request
 	respondWithJson(w, http.StatusCreated, createdUser)
 }
 
-func (dbCfg *dbConfig) handlerGetUser (w http.ResponseWriter, r *http.Request) {
-
-	id:= parsePathForId(w, r)
-	fetchedUser, err := dbCfg.DB.GetUserById(r.Context(), int32(id))
-	if err != nil {
-		respondWithJson(w, http.StatusInternalServerError, map[string]string{"error": "Can't found user with id " + strconv.Itoa(id)})
-		return
-	}
-	respondWithJson(w, http.StatusOK, fetchedUser)
+func (cfg *dbConfig) handlerUsersGet(w http.ResponseWriter, r *http.Request, user database.User) {
+	respondWithJson(w, http.StatusOK, user)
 }
 
 func (dbCfg *dbConfig) handlerUpdateUser (w http.ResponseWriter, r *http.Request) {
 
-	id:= parsePathForId(w, r)
+	id, err:= extractUserIDFromURL(r)
 
-	user, err := parseJsonRequest(r)
+	if err != nil {
+		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request: unable to parse User params"})
+		return
+	}
+
+	user, err := parseUserJsonRequest(r)
 	if err != nil {
 		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request: unable to parse User params"})
 		return
@@ -58,16 +59,15 @@ func (dbCfg *dbConfig) handlerUpdateUser (w http.ResponseWriter, r *http.Request
 	respondWithJson(w, http.StatusOK, updatedUser)
 }
 
-func parsePathForId (w http.ResponseWriter, r *http.Request) (int) {
-
+func extractUserIDFromURL(r *http.Request) (int, error) {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) != 3 {
-		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request URL"})
+		return 0, errors.New("invalid request URL")
 	}
 	
 	id, err := strconv.Atoi(parts[2]) // Convert ID to int
 	if err != nil {
-		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
+		return 0, errors.New("invalid user ID")
 	}
-	return id
+	return id, nil
 }

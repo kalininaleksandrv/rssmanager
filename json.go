@@ -6,14 +6,32 @@ import (
 	"net/http"
 )
 
-type payload struct {
-	Id  int    `json:"id"`
+type payloadUser struct {
 	Name string `json:"name"`
 }
 
-func parseJsonRequest(r *http.Request) (payload, error) {
+type payloadFeed struct {
+	Name string `json:"name"`
+	Url string `json:"url"`
+	UserID int32 `json:"user_id"`
+}
 
-	payloadObj := payload{}
+func parseUserJsonRequest(r *http.Request) (payloadUser, error) {
+
+	payloadObj := payloadUser{}
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&payloadObj)
+	if err != nil {
+		log.Printf("Error decoding request, %v", err)
+		return payloadObj, err
+	}
+	return payloadObj, nil
+}
+
+func parseFeedJsonRequest(r *http.Request) (payloadFeed, error) {
+
+	payloadObj := payloadFeed{}
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&payloadObj)

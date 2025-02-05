@@ -1,0 +1,12 @@
+-- +goose Up
+CREATE TABLE feeds (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    url TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- +goose Down
+DROP TABLE feeds;

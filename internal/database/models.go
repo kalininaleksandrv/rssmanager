@@ -8,6 +8,15 @@ import (
 	"time"
 )
 
+type Feed struct {
+	ID        int32     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Url       string    `json:"url"`
+	UserID    int32     `json:"user_id"`
+}
+
 type User struct {
 	ID        int32     `json:"id"`
 	Name      string    `json:"name"`
