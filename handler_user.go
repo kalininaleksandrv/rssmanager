@@ -19,9 +19,7 @@ func (dbCfg *dbConfig) handlerCreateUser (w http.ResponseWriter, r *http.Request
 		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request: " + err.Error()})
 		return
 	}
-	createdUser, err := dbCfg.DB.CreateUser(r.Context(), database.CreateUserParams{
-		Name:      user.Name,
-	})
+	createdUser, err := dbCfg.DB.CreateUser(r.Context(), user.Name)
 	if err != nil {
 		respondWithJson(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create user with name " + user.Name})
 		return

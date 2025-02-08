@@ -11,19 +11,13 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (created_at, updated_at, name)
-VALUES ($1, $2, $3)
+INSERT INTO users (name)
+VALUES ($1)
 RETURNING id, name, created_at, updated_at
 `
 
-type CreateUserParams struct {
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Name      string    `json:"name"`
-}
-
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.CreatedAt, arg.UpdatedAt, arg.Name)
+func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser, name)
 	var i User
 	err := row.Scan(
 		&i.ID,

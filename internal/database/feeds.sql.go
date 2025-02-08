@@ -7,31 +7,22 @@ package database
 
 import (
 	"context"
-	"time"
 )
 
 const createFeed = `-- name: CreateFeed :one
-INSERT INTO feeds (created_at, updated_at, name, url, user_id)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO feeds (name, url, user_id)
+VALUES ($1, $2, $3)
 RETURNING id, name, created_at, updated_at, url, user_id
 `
 
 type CreateFeedParams struct {
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Name      string    `json:"name"`
-	Url       string    `json:"url"`
-	UserID    int32     `json:"user_id"`
+	Name   string `json:"name"`
+	Url    string `json:"url"`
+	UserID int32  `json:"user_id"`
 }
 
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
-	row := q.db.QueryRowContext(ctx, createFeed,
-		arg.CreatedAt,
-		arg.UpdatedAt,
-		arg.Name,
-		arg.Url,
-		arg.UserID,
-	)
+	row := q.db.QueryRowContext(ctx, createFeed, arg.Name, arg.Url, arg.UserID)
 	var i Feed
 	err := row.Scan(
 		&i.ID,
