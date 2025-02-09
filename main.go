@@ -13,6 +13,7 @@ import (
 
 type dbConfig struct {
 	DB *database.Queries
+	DBSQL *sql.DB
 }
 
 func main() {
@@ -33,6 +34,7 @@ func main() {
 
 	dbCfg := dbConfig{
 		DB: database.New(conn),
+		DBSQL: conn,
 	}
 
 	http.HandleFunc("POST /user", dbCfg.handlerCreateUser)

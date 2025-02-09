@@ -13,7 +13,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (name)
 VALUES ($1)
-RETURNING id, name, created_at, updated_at
+RETURNING id, name, created_at, updated_at, counter
 `
 
 func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
@@ -24,12 +24,13 @@ func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Counter,
 	)
 	return i, err
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, name, created_at, updated_at FROM users WHERE id = $1
+SELECT id, name, created_at, updated_at, counter FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
@@ -40,6 +41,7 @@ func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Counter,
 	)
 	return i, err
 }
@@ -48,7 +50,7 @@ const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET name = $2, updated_at = $3
 WHERE id = $1
-RETURNING id, name, created_at, updated_at
+RETURNING id, name, created_at, updated_at, counter
 `
 
 type UpdateUserParams struct {
@@ -65,6 +67,24 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Counter,
 	)
 	return i, err
+}
+
+const updateUserCounter = `-- name: UpdateUserCounter :exec
+UPDATE users
+SET counter = $2, updated_at = $3
+WHERE id = $1
+`
+
+type UpdateUserCounterParams struct {
+	ID        int32     `json:"id"`
+	Counter   int32     `json:"counter"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (q *Queries) UpdateUserCounter(ctx context.Context, arg UpdateUserCounterParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserCounter, arg.ID, arg.Counter, arg.UpdatedAt)
+	return err
 }
