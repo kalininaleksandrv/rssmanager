@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"time"
@@ -23,7 +24,7 @@ func (dbCfg *dbConfig) handlerCreateFeed (w http.ResponseWriter, r *http.Request
         return
     }
 
-	defer tx.Rollback()
+	defer tx.Rollback() //how this is not works if tx.Commit() is called?
 
 	qtx := dbCfg.DB.WithTx(tx)
 
@@ -52,4 +53,35 @@ func (dbCfg *dbConfig) handlerCreateFeed (w http.ResponseWriter, r *http.Request
     }
 
 	respondWithJson(w, http.StatusCreated, createdFeed)
+}
+
+func (dbCfg *dbConfig) handlerFetchAllFeeds (w http.ResponseWriter, r *http.Request) {
+
+	delay := -10 * time.Minute
+
+	feeds, err := dbCfg.DB.GetFeedsForFetchUpdate(r.Context(), sql.NullTime{Time: time.Now().Add(delay), Valid: true})
+	if err != nil {
+		respondWithJson(w, http.StatusInternalServerError, map[string]string{"error": "No feeds to fetch"})
+		return
+	}
+	sliceOfFeeds := []string{}
+	for _, feed := range feeds {
+
+		rssFeed, err := urlToFeed(feed.Url)
+		if err != nil {
+			log.Println("Failed to fetch feed: ", feed.Url)
+		} else {
+			_, err := dbCfg.DB.UpdateFeedLastFetch(r.Context(), database.UpdateFeedLastFetchParams{
+				ID:            feed.ID,
+				LastFetchedAt: sql.NullTime{Time: time.Now(), Valid: true},
+			})
+			if err != nil {
+				log.Println("Failed to update feed: ", feed.ID)
+			}
+			print(rssFeed.Channel.Title)
+			sliceOfFeeds = append(sliceOfFeeds, feed.Name)
+		}
+
+	}
+	respondWithJson(w, http.StatusOK, map[string][]string{"Feeds being updated": sliceOfFeeds})
 }

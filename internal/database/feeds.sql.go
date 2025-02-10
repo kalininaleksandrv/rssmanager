@@ -7,12 +7,13 @@ package database
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createFeed = `-- name: CreateFeed :one
 INSERT INTO feeds (name, url, user_id)
 VALUES ($1, $2, $3)
-RETURNING id, name, created_at, updated_at, url, user_id
+RETURNING id, name, created_at, updated_at, url, user_id, last_fetched_at
 `
 
 type CreateFeedParams struct {
@@ -31,12 +32,13 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.UpdatedAt,
 		&i.Url,
 		&i.UserID,
+		&i.LastFetchedAt,
 	)
 	return i, err
 }
 
 const getFeedsByUserId = `-- name: GetFeedsByUserId :many
-SELECT id, name, created_at, updated_at, url, user_id FROM feeds WHERE user_id = $1
+SELECT id, name, created_at, updated_at, url, user_id, last_fetched_at FROM feeds WHERE user_id = $1
 `
 
 func (q *Queries) GetFeedsByUserId(ctx context.Context, userID int32) ([]Feed, error) {
@@ -55,6 +57,7 @@ func (q *Queries) GetFeedsByUserId(ctx context.Context, userID int32) ([]Feed, e
 			&i.UpdatedAt,
 			&i.Url,
 			&i.UserID,
+			&i.LastFetchedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -67,4 +70,66 @@ func (q *Queries) GetFeedsByUserId(ctx context.Context, userID int32) ([]Feed, e
 		return nil, err
 	}
 	return items, nil
+}
+
+const getFeedsForFetchUpdate = `-- name: GetFeedsForFetchUpdate :many
+SELECT id, name, created_at, updated_at, url, user_id, last_fetched_at FROM feeds WHERE last_fetched_at IS NULL OR last_fetched_at < $1
+`
+
+func (q *Queries) GetFeedsForFetchUpdate(ctx context.Context, lastFetchedAt sql.NullTime) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedsForFetchUpdate, lastFetchedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Feed
+	for rows.Next() {
+		var i Feed
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Url,
+			&i.UserID,
+			&i.LastFetchedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateFeedLastFetch = `-- name: UpdateFeedLastFetch :one
+UPDATE feeds
+SET last_fetched_at = $2
+WHERE id = $1
+RETURNING id, name, created_at, updated_at, url, user_id, last_fetched_at
+`
+
+type UpdateFeedLastFetchParams struct {
+	ID            int32        `json:"id"`
+	LastFetchedAt sql.NullTime `json:"last_fetched_at"`
+}
+
+func (q *Queries) UpdateFeedLastFetch(ctx context.Context, arg UpdateFeedLastFetchParams) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, updateFeedLastFetch, arg.ID, arg.LastFetchedAt)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Url,
+		&i.UserID,
+		&i.LastFetchedAt,
+	)
+	return i, err
 }

@@ -17,6 +17,7 @@ type dbConfig struct {
 }
 
 func main() {
+
 	godotenv.Load()
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -44,6 +45,9 @@ func main() {
 	http.HandleFunc("PUT /user/", dbCfg.handlerUpdateUser)
 
 	http.HandleFunc("POST /feed/", dbCfg.handlerUserProxy(dbCfg.handlerCreateFeed))
+
+	http.HandleFunc("GET /updateallfeeds/", dbCfg.handlerFetchAllFeeds)
+
 
 	log.Printf("Server starting on port %s", port)
 
