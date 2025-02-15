@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/kalininaleksandrv/rssmanager/internal/database"
@@ -64,24 +65,49 @@ func (dbCfg *dbConfig) handlerFetchAllFeeds (w http.ResponseWriter, r *http.Requ
 		respondWithJson(w, http.StatusInternalServerError, map[string]string{"error": "No feeds to fetch"})
 		return
 	}
+
 	sliceOfFeeds := []string{}
+	waitGroup := &sync.WaitGroup{}
+
 	for _, feed := range feeds {
 
-		rssFeed, err := urlToFeed(feed.Url)
-		if err != nil {
-			log.Println("Failed to fetch feed: ", feed.Url)
-		} else {
-			_, err := dbCfg.DB.UpdateFeedLastFetch(r.Context(), database.UpdateFeedLastFetchParams{
-				ID:            feed.ID,
-				LastFetchedAt: sql.NullTime{Time: time.Now(), Valid: true},
-			})
-			if err != nil {
-				log.Println("Failed to update feed: ", feed.ID)
-			}
-			print(rssFeed.Channel.Title)
-			sliceOfFeeds = append(sliceOfFeeds, feed.Name)
+		waitGroup.Add(1)
+		// new struct for the clean way to get the result of fetching the feed
+		type feedResult struct {
+			rssFeed RssFeed
+			err     error
 		}
+		//we use channel to get the result of fetching the feed
+		resultChan := make(chan feedResult)
 
+		go func() {
+			//here we fecching the feed
+			rssFeed, err := urlToFeed(feed.Url, waitGroup)
+
+			if err == nil {
+				_, err := dbCfg.DB.UpdateFeedLastFetch(r.Context(), database.UpdateFeedLastFetchParams{
+					ID:            feed.ID,
+					LastFetchedAt: sql.NullTime{Time: time.Now(), Valid: true},
+				})
+				if err != nil {
+					log.Println("Failed to update feed: ", feed.ID)
+				}
+				print(rssFeed.Channel.Title)
+			}
+			//here we send the result to the channel
+			resultChan <- feedResult{rssFeed, err}
+		}()
+
+		//here we get the result from the channel
+		result := <-resultChan
+		rssFeed := result.rssFeed
+		err := result.err
+
+		if(err != nil) {
+			log.Println("Failed to fetch feed: ", feed.Url)
+		}
+		sliceOfFeeds = append(sliceOfFeeds, rssFeed.Channel.Title)
 	}
+	waitGroup.Wait()
 	respondWithJson(w, http.StatusOK, map[string][]string{"Feeds being updated": sliceOfFeeds})
 }

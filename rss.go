@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"golang.org/x/text/encoding/charmap"
@@ -29,7 +30,10 @@ type RssItem struct {
 	GUID        string `xml:"guid"`
 }
 
-func urlToFeed(url string) (RssFeed, error) {
+func urlToFeed(url string, wg *sync.WaitGroup) (RssFeed, error) {
+	defer wg.Done()
+	start := time.Now()
+	fmt.Printf("---> Start fetching URL %s at %v\n", url, start)
 	httpClient := http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -60,5 +64,6 @@ func urlToFeed(url string) (RssFeed, error) {
 	if (err != nil) {
 		return rssFeed, err
 	}
+	fmt.Printf("Fetched %s in %v\n", url, time.Since(start))
 	return rssFeed, nil
 }
