@@ -1,0 +1,1 @@
+sqlc generate to generate sql queries and models
